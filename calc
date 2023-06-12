@@ -1,0 +1,187 @@
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Scanner;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+public class Calculator {
+    enum RomanNumeral {
+        I(1), IV(4), V(5), IX(9), X(10),
+        XL(40), L(50), XC(90), C(100),
+        CD(400), D(500), CM(900), M(1000);
+
+        private int value;
+
+        RomanNumeral(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
+
+        public static List<RomanNumeral> getReverseSortedValues() {
+            return Stream.of(values())
+                    .sorted(Comparator.comparing((RomanNumeral e) -> e.value).reversed())
+                    .collect(Collectors.toList());
+        }
+    }
+
+    public static String decimalToRoman(int decimal) {
+        if (decimal <= 0 || decimal >= 4000) {
+            throw new IllegalArgumentException("Значение десятичной цифры находится вне диапазона (1-3999).");
+        }
+
+        StringBuilder roman = new StringBuilder();
+        List<RomanNumeral> reverseSortedValues = RomanNumeral.getReverseSortedValues();
+
+        int remaining = decimal;
+
+        for (RomanNumeral numeral : reverseSortedValues) {
+            while (remaining >= numeral.getValue()) {
+                roman.append(numeral);
+                remaining -= numeral.getValue();
+            }
+        }
+
+        return roman.toString();
+    }
+
+    public static int romanToDecimal(String romanNumber) {
+        String romanNumeral = romanNumber.toUpperCase();
+        int decimal = 0;
+
+        List<RomanNumeral> reverseSortedValues = RomanNumeral.getReverseSortedValues();
+
+        int i = 0;
+        while (i < romanNumeral.length()) {
+            char currentChar = romanNumeral.charAt(i);
+
+            RomanNumeral currentSymbol = RomanNumeral.valueOf(String.valueOf(currentChar));
+
+            if (i + 1 < romanNumeral.length()) {
+                char nextChar = romanNumeral.charAt(i + 1);
+                RomanNumeral nextSymbol = RomanNumeral.valueOf(String.valueOf(nextChar));
+
+                if (nextSymbol.getValue() > currentSymbol.getValue()) {
+                    decimal += nextSymbol.getValue() - currentSymbol.getValue();
+                    i += 2;
+                    continue;
+                }
+            }
+
+            decimal += currentSymbol.getValue();
+            i++;
+        }
+
+        return decimal;
+    }
+
+    public static String performOperation(String number1, String number2, char operator) {
+        boolean isRoman1 = isRomanNumeral(number1);
+        boolean isRoman2 = isRomanNumeral(number2);
+
+        if (isRoman1 && isRoman2) {
+            String romanNumber1 = number1.toUpperCase();
+            String romanNumber2 = number2.toUpperCase();
+
+            int decimal1 = romanToDecimal(romanNumber1);
+            int decimal2 = romanToDecimal(romanNumber2);
+
+            if (decimal1 < 1 || decimal1 > 10 || decimal2 < 1 || decimal2 > 10) {
+                throw new IllegalArgumentException("Римские числа должны быть в диапазоне от 1 до 10.");
+            }
+
+            int result;
+
+            switch (operator) {
+                case '+':
+                    result = decimal1 + decimal2;
+                    break;
+                case '-':
+                    result = decimal1 - decimal2;
+                    break;
+                case '*':
+                    result = decimal1 * decimal2;
+                    break;
+                case '/':
+                    result = decimal1 / decimal2;
+                    break;
+                default:
+                    throw new IllegalArgumentException("Недопустимый оператор: " + operator);
+            }
+
+            return decimalToRoman(result);
+        } else if (!isRoman1 && !isRoman2) {
+            int num1;
+            int num2;
+
+            try {
+                num1 = Integer.parseInt(number1);
+                num2 = Integer.parseInt(number2);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Введено недопустимое число. Пожалуйста, введите целые числа от 1 до 10.");
+            }
+
+            if (num1 < 1 || num1 > 10 || num2 < 1 || num2 > 10) {
+                throw new IllegalArgumentException("Введено недопустимое число. Пожалуйста, введите целые числа от 1 до 10.");
+            }
+
+            int result;
+
+            switch (operator) {
+                case '+':
+                    result = num1 + num2;
+                    break;
+                case '-':
+                    result = num1 - num2;
+                    break;
+                case '*':
+                    result = num1 * num2;
+                    break;
+                case '/':
+                    result = num1 / num2;
+                    break;
+                default:
+                    throw new IllegalArgumentException("Недопустимый оператор: " + operator);
+            }
+
+            return Integer.toString(result);
+        } else {
+            throw new IllegalArgumentException("Сочетание римских и арабских цифр не поддерживается.");
+        }
+    }
+
+    public static boolean isRomanNumeral(String input) {
+        String romanNumeralRegex = "(?i)^(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$";
+        return input.matches(romanNumeralRegex);
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.print("Введите выражение: ");
+        String expression = scanner.nextLine();
+
+        String[] parts = expression.split(" ");
+        if (parts.length != 3) {
+            System.out.println("Неверный формат выражения. Пожалуйста, введите правильное выражение.");
+            return;
+        }
+
+        String number1 = parts[0];
+        String operator = parts[1];
+        String number2 = parts[2];
+
+        String result;
+        try {
+            result = performOperation(number1, number2, operator.charAt(0));
+            System.out.println("Результат: " + result);
+        } catch (IllegalArgumentException e) {
+            System.out.println("Ошибка: " + e.getMessage());
+        }
+
+        scanner.close();
+    }
+}
